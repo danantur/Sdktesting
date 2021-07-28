@@ -14,17 +14,13 @@ class BluetoothListAdapter(private val items: ArrayList<BluetoothDevice>) : Recy
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         var LargeText: TextView = itemView.findViewById(R.id.name)
-        var IconImage: ImageView = itemView.findViewById(R.id.d_icon)
-        var hldr: ConstraintLayout = itemView.findViewById(R.id.holder)
-        var item_start_height: Int? = null
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.LargeText.text = items[position].name
-        holder.hldr.setOnClickListener {
+        holder.itemView.setOnClickListener {
             mOnItemClickListener?.onItemClick(position)
         }
-        holder.item_start_height = holder.hldr.measuredHeight
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {

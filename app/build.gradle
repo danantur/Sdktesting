@@ -52,7 +52,7 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
     implementation 'androidx.navigation:navigation-fragment-ktx:2.3.5'
     implementation 'androidx.navigation:navigation-ui-ktx:2.3.5'
-    implementation files('C:/Users/gmr/Desktop/Пульсоксиметр Contec/Contec Pulse Oximeter Ble SDK Development Guide v1.8/contec_spo2_ble_sdk_v1.8.jar')
+    implementation files('libs/contec_spo2_ble_sdk_v1.8.jar')
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'

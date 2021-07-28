@@ -184,20 +184,37 @@ class MainActivity : AppCompatActivity() {
 
     val bluetooth_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            Toast.makeText(applicationContext, "Блюпуп робит", Toast.LENGTH_LONG).show()
             bluetoothOK = true
             if (btn!!.getState() == State.PROGRESS)
                 sdk!!.startBluetoothSearch(searchCallback, 5000)
         }
-        else
-            Toast.makeText(applicationContext, "Без включения BLE приложение не будет работать", Toast.LENGTH_LONG).show()
+        else {
+            Toast.makeText(
+                applicationContext,
+                "Без включения BLE приложение не будет работать",
+                Toast.LENGTH_LONG
+            ).show()
+            if (btn!!.getState() == State.PROGRESS) {
+                btn!!.revertAnimation()
+                stp_btn!!.visibility = INVISIBLE
+            }
+        }
     }
 
-    val location_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    val location_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
         if (locationmanager?.isProviderEnabled(LocationManager.GPS_PROVIDER)!!)
             enable_BLE()
-        else
-            Toast.makeText(applicationContext, "Без включения местоположения приложение не будет работать", Toast.LENGTH_LONG).show()
+        else {
+            Toast.makeText(
+                applicationContext,
+                "Без включения местоположения приложение не будет работать",
+                Toast.LENGTH_LONG
+            ).show()
+            if (btn!!.getState() == State.PROGRESS) {
+                btn!!.revertAnimation()
+                stp_btn!!.visibility = INVISIBLE
+            }
+        }
 
     }
 
@@ -212,8 +229,7 @@ class MainActivity : AppCompatActivity() {
         }
         if (bluetooth == null) {
             Toast.makeText(
-                this, "" +
-                        "Device does not have any Bluetooth adapter!", Toast.LENGTH_LONG
+                this, "Не удалось создать Bluetooth адаптер", Toast.LENGTH_LONG
             ).show()
         } else if (!bluetooth?.isEnabled()!!) {
             bluetooth_callback.launch(Intent(
@@ -240,8 +256,9 @@ class MainActivity : AppCompatActivity() {
         override fun onSearchError(errorCode: Int) {
             if (errorCode == SdkConstants.SCAN_FAIL_BT_UNSUPPORT) {
                 Toast.makeText(applicationContext, "Это устройство не поддерживает BLE!", Toast.LENGTH_LONG).show()
+                btn!!.revertAnimation()
+                stp_btn!!.visibility = INVISIBLE
             } else if (errorCode == SdkConstants.SCAN_FAIL_BT_DISABLE) {
-                Log.e("debug", "bluetooth not enabled, trying to enable")
                 init_bluetooth()
             }
         }

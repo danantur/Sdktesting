@@ -158,7 +158,6 @@ class MainActivity2 : AppCompatActivity() {
 
     val bluetooth_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            Toast.makeText(applicationContext, "Блюпуп робит", Toast.LENGTH_LONG).show()
             bluetoothOK = true
         }
         else {
@@ -171,7 +170,7 @@ class MainActivity2 : AppCompatActivity() {
         }
     }
 
-    val location_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+    val location_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
         if (locationmanager?.isProviderEnabled(LocationManager.GPS_PROVIDER)!!)
             enable_BLE()
         else {

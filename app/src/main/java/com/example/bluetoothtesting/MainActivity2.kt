@@ -170,7 +170,7 @@ class MainActivity2 : AppCompatActivity() {
         }
     }
 
-    val location_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+    val location_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (locationmanager?.isProviderEnabled(LocationManager.GPS_PROVIDER)!!)
             enable_BLE()
         else {

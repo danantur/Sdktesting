@@ -177,6 +177,7 @@ class MainActivity : AppCompatActivity() {
                     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
                     return
                 }
+            locationmanager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
             enable_BLE()
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
@@ -201,7 +202,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    val location_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { _ ->
+    val location_callback = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         if (locationmanager?.isProviderEnabled(LocationManager.GPS_PROVIDER)!!)
             enable_BLE()
         else {

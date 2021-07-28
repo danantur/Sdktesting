@@ -145,12 +145,14 @@ class MainActivity2 : AppCompatActivity() {
                     Log.e("debug", permissions[r])
                     Toast.makeText(
                         applicationContext,
-                        "Не выданы все необходимые разрешения, попробуйте ещё раз, нажав на кнопку",
+                        "Не выданы все необходимые разрешения",
                         Toast.LENGTH_LONG
                     ).show()
+                    finish()
                     super.onRequestPermissionsResult(requestCode, permissions, grantResults)
                     return
                 }
+            locationmanager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
             enable_BLE()
         }
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)

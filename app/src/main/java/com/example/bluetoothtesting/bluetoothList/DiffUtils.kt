@@ -1,4 +1,4 @@
-package com.example.bluetoothtesting.BluetoothList
+package com.example.bluetoothtesting.bluetoothList
 
 import android.bluetooth.BluetoothDevice
 import androidx.recyclerview.widget.DiffUtil
@@ -24,7 +24,7 @@ class Diffutil(oldList: ArrayList<BluetoothDevice>, newList: List<BluetoothDevic
     override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
         val old: BluetoothDevice = oldList!![oldItemPosition]
         val new: BluetoothDevice = newList!![newItemPosition]
-        return old.equals(new.name)
+        return old.equals(new)
     }
 
     override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {

@@ -1,12 +1,14 @@
 package com.example.bluetoothtesting
 
 import android.Manifest
+import android.animation.LayoutTransition
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Bundle
@@ -18,7 +20,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatButton
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,9 +28,10 @@ import br.com.simplepass.loadingbutton.customViews.CircularProgressButton
 import br.com.simplepass.loadingbutton.presentation.State
 import com.contec.spo2.code.bean.SdkConstants
 import com.contec.spo2.code.callback.BluetoothSearchCallback
-import com.contec.spo2.code.connect.ContecSdk
-import com.example.bluetoothtesting.BluetoothList.BluetoothListAdapter
-import com.example.bluetoothtesting.BluetoothList.Diffutil
+import com.example.bluetoothtesting.bluetoothList.BluetoothListAdapter
+import com.ideabus.model.bluetooth.MyBluetoothLE
+import com.ideabus.model.data.*
+import com.ideabus.model.protocol.WBPProtocol
 
 
 class MainActivity : AppCompatActivity() {
@@ -45,8 +48,8 @@ class MainActivity : AppCompatActivity() {
     private var btn: CircularProgressButton? = null
     private var stp_btn: AppCompatButton? = null
 
-    private var DeviceAdapter: BluetoothListAdapter? = null
     private var DeviceList: ArrayList<BluetoothDevice> = ArrayList(mutableListOf())
+    private var DeviceAdapter: BluetoothListAdapter = BluetoothListAdapter(DeviceList)
 
     fun check_multiple_perms(vararg perms: String): Boolean {
         val perms_array: ArrayList<String> = ArrayList()
@@ -89,6 +92,7 @@ class MainActivity : AppCompatActivity() {
 
         Recyclerview = findViewById(R.id.DeviceList)
 
+        Recyclerview?.itemAnimator = DefaultItemAnimator()
         Recyclerview?.layoutManager = LinearLayoutManager(this)
 
         val dividerItemDecoration = DividerItemDecoration(
@@ -99,13 +103,12 @@ class MainActivity : AppCompatActivity() {
         dividerItemDecoration.setDrawable(ContextCompat.getDrawable(baseContext, R.drawable.list_divider)!!)
         Recyclerview?.addItemDecoration(dividerItemDecoration)
 
-        DeviceAdapter = BluetoothListAdapter(DeviceList)
-        DeviceAdapter?.setOnItemClick(object : BluetoothListAdapter.OnItemClickListener {
+        DeviceAdapter.setOnItemClick(object : BluetoothListAdapter.OnItemClickListener {
             override fun onItemClick(position: Int) {
                 sdk?.stopBluetoothSearch()
 
-                btn!!.revertAnimation()
-                stp_btn!!.visibility = INVISIBLE
+                btn?.revertAnimation()
+                stp_btn?.visibility = INVISIBLE
 
                 val intent = Intent(this@MainActivity, MainActivity2::class.java)
 
@@ -120,25 +123,26 @@ class MainActivity : AppCompatActivity() {
         btn = findViewById(R.id.main_button)
         stp_btn = findViewById(R.id.stop_button)
 
-        btn!!.setOnClickListener {
+        btn?.setOnClickListener {
             if (bluetoothOK) {
-                val calc = DiffUtil.calculateDiff(Diffutil(DeviceList, ArrayList()))
+                val itemCount = DeviceList.size
                 DeviceList.clear()
-                calc.dispatchUpdatesTo(DeviceAdapter!!)
-                sdk?.startBluetoothSearch(searchCallback, SEARCH_TIMEOUT)
+                DeviceAdapter.notifyItemRangeRemoved(0, itemCount)
 
-                btn!!.startAnimation()
+                //sdk?.startBluetoothSearch(searchCallback, SEARCH_TIMEOUT)
+
+                btn?.startAnimation()
                 stp_btn!!.visibility = VISIBLE
             }
             else
                 init_bluetooth()
         }
 
-        stp_btn!!.setOnClickListener {
-            sdk?.stopBluetoothSearch()
+        stp_btn?.setOnClickListener {
+            //sdk?.stopBluetoothSearch()
 
-            btn!!.revertAnimation()
-            stp_btn!!.visibility = INVISIBLE
+            btn?.revertAnimation()
+            stp_btn?.visibility = INVISIBLE
         }
     }
 
@@ -246,10 +250,8 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 Log.e("debug", device.name)
                 if (!DeviceList.contains(device)) {
-                    val oldList: ArrayList<BluetoothDevice> = DeviceList.clone() as ArrayList<BluetoothDevice>
                     DeviceList.add(device)
-                    val calc = DiffUtil.calculateDiff(Diffutil(oldList, DeviceList))
-                    calc.dispatchUpdatesTo(DeviceAdapter!!)
+                    DeviceAdapter.notifyItemInserted(DeviceList.size - 1)
                 }
             }
         }

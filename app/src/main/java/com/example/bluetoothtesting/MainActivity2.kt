@@ -40,7 +40,7 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
         var DEVICE_NAME: String = "DEVICE_NAME"
     }
 
-    private var thermoprotocol: BPMProtocol? = null
+    private var thermoprotocol: ThermoProtocol? = null
     
     private var finish_timer: Timer? = null
     
@@ -221,7 +221,7 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
     }
 
     private fun set_communication() {
-        thermoprotocol = BPMProtocol(this, false, true)
+        thermoprotocol = ThermoProtocol(this, false, true)
         thermoprotocol!!.setOnDataResponseListener(this)
         thermoprotocol!!.setOnConnectStateListener(this)
         thermoprotocol!!.setOnNotifyStateListener(this)
@@ -252,7 +252,7 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
     override fun onDestroy() {
         super.onDestroy()
         if (thermoprotocol != null) {
-            if (thermoprotocol!!.isConnected()) thermoprotocol!!.disconnectBPM()
+            if (thermoprotocol!!.isConnected()) thermoprotocol!!.disconnect()
             thermoprotocol!!.stopScan()
         }
         thermoprotocol = null
@@ -261,7 +261,7 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
     override fun onStop() {
         super.onStop()
         if (thermoprotocol != null) {
-            if (thermoprotocol!!.isConnected()) thermoprotocol!!.disconnectBPM()
+            if (thermoprotocol!!.isConnected()) thermoprotocol!!.disconnect()
             thermoprotocol!!.stopScan()
         }
         thermoprotocol = null
@@ -281,26 +281,27 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
         }
     }
 
-    override fun onConnectionState(p0: BPMProtocol.ConnectState?) {
+    override fun onConnectionState(p0: ThermoProtocol.ConnectState?) {
         runOnUiThread {
             when (p0) {
-                BPMProtocol.ConnectState.Connected -> {
-                    loading?.visibility = View.INVISIBLE
-                    text1!!.visibility = View.VISIBLE
-                    text2!!.visibility = View.VISIBLE
-                    text3!!.visibility = View.VISIBLE
+                ThermoProtocol.ConnectState.Connected -> {
                 }
-                BPMProtocol.ConnectState.ConnectTimeout -> {
-
+                ThermoProtocol.ConnectState.ConnectTimeout -> {
+                    Toast.makeText(
+                        applicationContext,
+                        "Устройство отключено, пытаемся его найти...",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    thermoprotocol!!.startScan(20)
                 }
-                BPMProtocol.ConnectState.Disconnect -> {
+                ThermoProtocol.ConnectState.Disconnect -> {
                     loading?.visibility = View.VISIBLE
                     text1!!.visibility = View.INVISIBLE
                     text2!!.visibility = View.INVISIBLE
                     text3!!.visibility = View.INVISIBLE
                     thermoprotocol!!.startScan(5)
                 }
-                BPMProtocol.ConnectState.ScanFinish -> {
+                ThermoProtocol.ConnectState.ScanFinish -> {
                     Toast.makeText(
                         applicationContext,
                         "Устройство отключено, пытаемся его найти...",
@@ -315,62 +316,23 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
         Log.e("onNotifyMessage", "$p0")
     }
 
-//    override fun onResponseDeviceInfo(p0: String?, p1: Int, p2: Float) {
-//        Log.e("onResponseDeviceInfo", "$p0 $p1 $p2")
-//        text1?.text = ("BatteryVoltage: $p2%")
-//    }
-//
-//    override fun onResponseUploadMeasureData(p0: ThermoMeasureData?) {
-//        Log.e("onResponseUploadMeasure", "${p0?.toString()}")
-//        text2?.text = ("ambientTemperature: ${p0?.ambientTemperature.toString()} C°")
-//        text3?.text = ("measureTemperature: ${p0?.measureTemperature.toString()} C°")
-//    }
+    override fun onResponseDeviceInfo(p0: String?, p1: Int, p2: Float) {
+        Log.e("onResponseDeviceInfo", "$p0 $p1 $p2")
+        text1?.text = ("BatteryVoltage: $p2%")
+    }
+
+    override fun onResponseUploadMeasureData(p0: ThermoMeasureData?) {
+        Log.e("onResponseUploadMeasure", "${p0?.toString()}")
+        text2?.text = ("ambientTemperature: ${p0?.ambientTemperature.toString()} C°")
+        text3?.text = ("measureTemperature: ${p0?.measureTemperature.toString()} C°")
+        loading?.visibility = View.INVISIBLE
+        text1!!.visibility = View.VISIBLE
+        text2!!.visibility = View.VISIBLE
+        text3!!.visibility = View.VISIBLE
+    }
 
     override fun onWriteMessage(p0: Boolean, p1: String?) {
         Log.e("onWriteMessage", "$p0 $p1")
     }
-
-    override fun onResponseReadHistory(p0: DRecord?) {
-        Log.e("onResponseReadHistory", p0.toString())
-    }
-
-    override fun onResponseClearHistory(p0: Boolean) {
-        Log.e("onResponseReadHistory", p0.toString())
-    }
-
-    override fun onResponseReadUserAndVersionData(p0: User?, p1: VersionData?) {
-        Log.e("onResponseReadHistory", "$p0 $p1")
-    }
-
-    override fun onResponseWriteUser(p0: Boolean) {
-        Log.e("onResponseWriteUser", "$p0")
-    }
-
-    override fun onResponseReadLastData(
-        p0: CurrentAndMData?,
-        p1: Int,
-        p2: Int,
-        p3: Int,
-        p4: Boolean
-    ) {
-        Log.e("onResponseReadLastData", "$p0 $p1 $p2 $p3 $p4")
-    }
-
-    override fun onResponseClearLastData(p0: Boolean) {
-        Log.e("onResponseClearLastData", "$p0")
-    }
-
-    override fun onResponseReadDeviceInfo(p0: DeviceInfo?) {
-        Log.e("onResponseReadDeviceInf", "$p0")
-    }
-
-    override fun onResponseReadDeviceTime(p0: DeviceInfo?) {
-        Log.e("onResponseReadDeviceTim", "$p0")
-    }
-
-    override fun onResponseWriteDeviceTime(p0: Boolean) {
-        Log.e("onResponseWriteDeviceTi", "$p0")
-    }
-
 
 }

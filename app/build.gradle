@@ -8,7 +8,7 @@ android {
     buildToolsVersion "31.0.0"
 
     defaultConfig {
-        applicationId "com.example.bluetoothtesting"
+        applicationId 'com.example.sdktesting'
         minSdkVersion 21
         targetSdkVersion 31
         versionCode 1

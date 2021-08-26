@@ -8,7 +8,10 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.location.LocationManager
+import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import android.view.MenuItem
@@ -20,18 +23,24 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import com.contec.spo2.code.bean.*
-import com.contec.spo2.code.callback.ConnectCallback
-import com.contec.spo2.code.callback.RealtimeCallback
-import com.contec.spo2.code.connect.ContecSdk
-import java.util.Timer
+import com.microlife_sdk.model.bluetooth.MyBluetoothLE
+import com.microlife_sdk.model.data.*
+import com.microlife_sdk.model.protocol.BPMProtocol
+import com.microlife_sdk.model.protocol.ThermoProtocol
+import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.concurrent.schedule
 
-class MainActivity2 : AppCompatActivity() {
+class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListener,
+    ThermoProtocol.OnNotifyStateListener,
+    ThermoProtocol.OnDataResponseListener, MyBluetoothLE.OnWriteStateListener {
 
     companion object {
         var DEVICE_ADDRESS: String = "DEVICE_ADDRESS"
         var DEVICE_NAME: String = "DEVICE_NAME"
     }
+
+    private var thermoprotocol: BPMProtocol? = null
     
     private var finish_timer: Timer? = null
     
@@ -40,23 +49,23 @@ class MainActivity2 : AppCompatActivity() {
 
     private var text1: TextView? = null
     private var text2: TextView? = null
+    private var text3: TextView? = null
     private var loading: ProgressBar? = null
-
-    private var connected: Boolean = false
 
     private var bluetooth: BluetoothAdapter? = null
     private var bluetoothOK: Boolean = false
-    private var sdk: ContecSdk? = null
 
     private var locationmanager: LocationManager? = null
+
+    private var shouldstop: Boolean = false
 
     fun check_multiple_perms(vararg perms: String): Boolean {
         val perms_array: ArrayList<String> = ArrayList()
         for (perm in perms) {
             if (ActivityCompat.checkSelfPermission(
                     this@MainActivity2,
-                    perm,) != PackageManager.PERMISSION_GRANTED) {
-                Log.e("debug", perm)
+                    perm,
+                ) != PackageManager.PERMISSION_GRANTED) {
                 perms_array.add(perm)
             }
         }
@@ -79,13 +88,14 @@ class MainActivity2 : AppCompatActivity() {
 
         title = device_name
 
-        sdk = ContecSdk(this)
-        sdk?.init(false)
-
         val sys_service = getSystemService(Context.BLUETOOTH_SERVICE)
         bluetooth = (if (sys_service is BluetoothManager) sys_service else null)?.adapter
 
         init_layout()
+    }
+
+    override fun onStart() {
+        super.onStart()
         init_bluetooth()
     }
 
@@ -98,6 +108,7 @@ class MainActivity2 : AppCompatActivity() {
 
         text1 = findViewById(R.id.textView)
         text2 = findViewById(R.id.textView2)
+        text3 = findViewById(R.id.textView3)
 
         loading = findViewById(R.id.loading)
     }
@@ -138,15 +149,16 @@ class MainActivity2 : AppCompatActivity() {
         if (requestCode == 100) {
             for (r in grantResults.indices)
                 if (grantResults[r] == PackageManager.PERMISSION_DENIED) {
-                    Log.e("debug", permissions[r])
-                    Toast.makeText(
-                        applicationContext,
-                        "Не выданы все необходимые разрешения",
-                        Toast.LENGTH_LONG
-                    ).show()
-                    finish()
-                    super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-                    return
+                    if (permissions[r] == Manifest.permission.ACCESS_COARSE_LOCATION) {
+                        Toast.makeText(
+                            applicationContext,
+                            "Не выданы все необходимые разрешения",
+                            Toast.LENGTH_LONG
+                        ).show()
+                        finish()
+                        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+                        return
+                    }
                 }
             locationmanager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
             enable_BLE()
@@ -208,127 +220,27 @@ class MainActivity2 : AppCompatActivity() {
         }
     }
 
-    fun set_communication() {
-        if (
-            (device_name?.startsWith("SpO201")!! || device_name?.startsWith("SpO202")!!
-                    || device_name?.startsWith("SpO206")!! || device_name
-                ?.startsWith("SpO208")!!
-                    || device_name?.startsWith("SpO209")!! || device_name
-                ?.startsWith("SpO210")!!)
-        ) {
-            start_communication()
-        }
-        else {
-            Toast.makeText(applicationContext, "Bluetooth device not supported", Toast.LENGTH_LONG).show()
-            finish()
-        }
+    private fun set_communication() {
+        thermoprotocol = BPMProtocol(this, false, true)
+        thermoprotocol!!.setOnDataResponseListener(this)
+        thermoprotocol!!.setOnConnectStateListener(this)
+        thermoprotocol!!.setOnNotifyStateListener(this)
+        thermoprotocol!!.setOnWriteStateListener(this)
+
+        start_communication()
     }
 
     private fun start_communication() {
-        sdk?.connect(device_address, object : ConnectCallback {
-            override fun onConnectStatus(p0: Int) {
-                runOnUiThread {
-                    when (p0) {
-                        SdkConstants.CONNECT_UNSUPPORT_DEVICETYPE -> {
-                            Log.e("debug", "CONNECT_CONNECTED!")
-                        }
-                        SdkConstants.CONNECT_UNSUPPORT_BLUETOOTHTYPE -> {
-                            Log.e("debug", "CONNECT_CONNECTED!")
-                        }
-                        SdkConstants.CONNECT_CONNECTING -> {
-                            Log.e("debug", "CONNECT_CONNECTING...")
-                        }
-                        SdkConstants.CONNECT_CONNECTED -> {
-                            Log.e("debug", "CONNECT_CONNECTED!")
-                            connected = true
-                            text1?.visibility = View.VISIBLE
-                            text2?.visibility = View.VISIBLE
-                            loading?.visibility = View.INVISIBLE
-                            sdk?.startRealtime(object : RealtimeCallback {
-                                override fun onFail(p0: Int) {
-                                    runOnUiThread {
-                                        Log.e("debug", p0.toString())
-                                        Toast.makeText(applicationContext, "Передача данных завершена", Toast.LENGTH_LONG).show()
-                                        finish()
-                                    }
-                                }
-
-                                override fun onRealtimeWaveData(
-                                    p0: Int,
-                                    p1: Int,
-                                    p2: Int,
-                                    p3: Int,
-                                    p4: Int
-                                ) {
-
-                                }
-
-                                override fun onSpo2Data(p0: Int, p1: Int, p2: Int, p3: Int) {
-                                    Log.e("spo2Data", "$p0 $p1 $p2 $p3")
-                                    runOnUiThread {
-                                        text1?.text = ("$p1%")
-                                        text2?.text = ("$p2 pm")
-                                    }
-                                }
-
-                                override fun onRealtimeEnd() {}
-
-                            })
-                        }
-                        SdkConstants.CONNECT_DISCONNECTED -> {
-                            Toast.makeText(
-                                applicationContext,
-                                "Disconnecting...",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            connected = false
-                            finish()
-                        }
-                        SdkConstants.CONNECT_DISCONNECT_SERVICE_UNFOUND -> {
-                            Toast.makeText(
-                                applicationContext,
-                                "No sevice found, Disconnecting...",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            connected = false
-                            finish()
-                        }
-                        SdkConstants.CONNECT_DISCONNECT_NOTIFY_FAIL -> {
-                            Toast.makeText(
-                                applicationContext,
-                                "Monitoring failed, Disconnecting...",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            connected = false
-                            finish()
-                        }
-                        SdkConstants.CONNECT_DISCONNECT_EXCEPTION -> {
-                            Toast.makeText(
-                                applicationContext,
-                                "Abnormal disconnection...",
-                                Toast.LENGTH_LONG
-                            ).show()
-                            connected = false
-                            finish()
-                        }
-                    }
-                }
-            }
-            override fun onOpenStatus(p0: Int) {}
-        })
+        if (!thermoprotocol!!.isSupportBluetooth(this))
+            return
+        thermoprotocol!!.startScan(10)
     }
 
     override fun onBackPressed() {
-        if (connected) {
-            sdk?.disconnect()
-        }
         super.finish()
     }
 
     override fun finish() {
-        if (connected) {
-            sdk?.disconnect()
-        }
         if (finish_timer == null) {
             finish_timer = Timer("FinishDelay", false)
             finish_timer!!.schedule(3500) {
@@ -337,5 +249,128 @@ class MainActivity2 : AppCompatActivity() {
         }
     }
 
-    
+    override fun onDestroy() {
+        super.onDestroy()
+        if (thermoprotocol != null) {
+            if (thermoprotocol!!.isConnected()) thermoprotocol!!.disconnectBPM()
+            thermoprotocol!!.stopScan()
+        }
+        thermoprotocol = null
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (thermoprotocol != null) {
+            if (thermoprotocol!!.isConnected()) thermoprotocol!!.disconnectBPM()
+            thermoprotocol!!.stopScan()
+        }
+        thermoprotocol = null
+    }
+
+    override fun onBtStateChanged(p0: Boolean) {
+        Log.e("onBtStateChanged", "$p0")
+        if (p0)
+            thermoprotocol!!.startScan(10)
+    }
+
+    override fun onScanResult(p0: String?, p1: String?, p2: Int) {
+        runOnUiThread { Log.e("onScanResult", "$p0 $p1 $p2") }
+        if (p0 == device_address) {
+            thermoprotocol!!.stopScan()
+            thermoprotocol!!.connect(p0)
+        }
+    }
+
+    override fun onConnectionState(p0: BPMProtocol.ConnectState?) {
+        runOnUiThread {
+            when (p0) {
+                BPMProtocol.ConnectState.Connected -> {
+                    loading?.visibility = View.INVISIBLE
+                    text1!!.visibility = View.VISIBLE
+                    text2!!.visibility = View.VISIBLE
+                    text3!!.visibility = View.VISIBLE
+                }
+                BPMProtocol.ConnectState.ConnectTimeout -> {
+
+                }
+                BPMProtocol.ConnectState.Disconnect -> {
+                    loading?.visibility = View.VISIBLE
+                    text1!!.visibility = View.INVISIBLE
+                    text2!!.visibility = View.INVISIBLE
+                    text3!!.visibility = View.INVISIBLE
+                    thermoprotocol!!.startScan(5)
+                }
+                BPMProtocol.ConnectState.ScanFinish -> {
+                    Toast.makeText(
+                        applicationContext,
+                        "Устройство отключено, пытаемся его найти...",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    thermoprotocol!!.startScan(20)
+                }
+            }}
+    }
+
+    override fun onNotifyMessage(p0: String?) {
+        Log.e("onNotifyMessage", "$p0")
+    }
+
+//    override fun onResponseDeviceInfo(p0: String?, p1: Int, p2: Float) {
+//        Log.e("onResponseDeviceInfo", "$p0 $p1 $p2")
+//        text1?.text = ("BatteryVoltage: $p2%")
+//    }
+//
+//    override fun onResponseUploadMeasureData(p0: ThermoMeasureData?) {
+//        Log.e("onResponseUploadMeasure", "${p0?.toString()}")
+//        text2?.text = ("ambientTemperature: ${p0?.ambientTemperature.toString()} C°")
+//        text3?.text = ("measureTemperature: ${p0?.measureTemperature.toString()} C°")
+//    }
+
+    override fun onWriteMessage(p0: Boolean, p1: String?) {
+        Log.e("onWriteMessage", "$p0 $p1")
+    }
+
+    override fun onResponseReadHistory(p0: DRecord?) {
+        Log.e("onResponseReadHistory", p0.toString())
+    }
+
+    override fun onResponseClearHistory(p0: Boolean) {
+        Log.e("onResponseReadHistory", p0.toString())
+    }
+
+    override fun onResponseReadUserAndVersionData(p0: User?, p1: VersionData?) {
+        Log.e("onResponseReadHistory", "$p0 $p1")
+    }
+
+    override fun onResponseWriteUser(p0: Boolean) {
+        Log.e("onResponseWriteUser", "$p0")
+    }
+
+    override fun onResponseReadLastData(
+        p0: CurrentAndMData?,
+        p1: Int,
+        p2: Int,
+        p3: Int,
+        p4: Boolean
+    ) {
+        Log.e("onResponseReadLastData", "$p0 $p1 $p2 $p3 $p4")
+    }
+
+    override fun onResponseClearLastData(p0: Boolean) {
+        Log.e("onResponseClearLastData", "$p0")
+    }
+
+    override fun onResponseReadDeviceInfo(p0: DeviceInfo?) {
+        Log.e("onResponseReadDeviceInf", "$p0")
+    }
+
+    override fun onResponseReadDeviceTime(p0: DeviceInfo?) {
+        Log.e("onResponseReadDeviceTim", "$p0")
+    }
+
+    override fun onResponseWriteDeviceTime(p0: Boolean) {
+        Log.e("onResponseWriteDeviceTi", "$p0")
+    }
+
+
 }

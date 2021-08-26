@@ -1,14 +1,12 @@
 package com.example.bluetoothtesting
 
 import android.Manifest
-import android.animation.LayoutTransition
 import android.app.Activity
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.location.LocationManager
 import android.os.Bundle
@@ -28,10 +26,9 @@ import br.com.simplepass.loadingbutton.customViews.CircularProgressButton
 import br.com.simplepass.loadingbutton.presentation.State
 import com.contec.spo2.code.bean.SdkConstants
 import com.contec.spo2.code.callback.BluetoothSearchCallback
+import com.contec.spo2.code.connect.ContecSdk
 import com.example.bluetoothtesting.bluetoothList.BluetoothListAdapter
-import com.ideabus.model.bluetooth.MyBluetoothLE
-import com.ideabus.model.data.*
-import com.ideabus.model.protocol.WBPProtocol
+import com.microlife_sdk.model.data.*
 
 
 class MainActivity : AppCompatActivity() {
@@ -129,7 +126,7 @@ class MainActivity : AppCompatActivity() {
                 DeviceList.clear()
                 DeviceAdapter.notifyItemRangeRemoved(0, itemCount)
 
-                //sdk?.startBluetoothSearch(searchCallback, SEARCH_TIMEOUT)
+                sdk?.startBluetoothSearch(searchCallback, SEARCH_TIMEOUT)
 
                 btn?.startAnimation()
                 stp_btn!!.visibility = VISIBLE
@@ -139,7 +136,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         stp_btn?.setOnClickListener {
-            //sdk?.stopBluetoothSearch()
+            sdk?.stopBluetoothSearch()
 
             btn?.revertAnimation()
             stp_btn?.visibility = INVISIBLE

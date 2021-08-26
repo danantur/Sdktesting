@@ -285,6 +285,10 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
         runOnUiThread {
             when (p0) {
                 ThermoProtocol.ConnectState.Connected -> {
+                    loading?.visibility = View.INVISIBLE
+                    text1!!.visibility = View.VISIBLE
+                    text2!!.visibility = View.VISIBLE
+                    text3!!.visibility = View.VISIBLE
                 }
                 ThermoProtocol.ConnectState.ConnectTimeout -> {
                     Toast.makeText(
@@ -325,10 +329,6 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
         Log.e("onResponseUploadMeasure", "${p0?.toString()}")
         text2?.text = ("ambientTemperature: ${p0?.ambientTemperature.toString()} C°")
         text3?.text = ("measureTemperature: ${p0?.measureTemperature.toString()} C°")
-        loading?.visibility = View.INVISIBLE
-        text1!!.visibility = View.VISIBLE
-        text2!!.visibility = View.VISIBLE
-        text3!!.visibility = View.VISIBLE
     }
 
     override fun onWriteMessage(p0: Boolean, p1: String?) {

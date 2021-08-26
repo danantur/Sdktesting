@@ -101,7 +101,7 @@ public class BluetoothLEHandler extends Handler
             }
             else if (this.bluetooth.mCurrentStatus != 17) {
                 XlogUtils.xLog(BluetoothLEHandler.TAG, "Connection timed out");
-                this.bluetooth.disconnect(18);
+                this.bluetooth.disconnect(20);
             }
         }
         else {

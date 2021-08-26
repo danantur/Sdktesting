@@ -18,13 +18,13 @@ import java.util.ArrayList;
 import android.bluetooth.BluetoothDevice;
 import android.content.Intent;
 import android.content.Context;
+import android.os.Looper;
 import android.os.Message;
 import com.microlife_sdk.model.XlogUtils;
 import android.content.BroadcastReceiver;
 import android.os.Handler;
 import java.util.List;
 import android.app.Activity;
-import android.util.Log;
 
 import java.util.Timer;
 import com.microlife_sdk.model.bluetooth.MyBluetoothLE;
@@ -84,7 +84,7 @@ public class ThermoProtocol implements BluetoothLEClass.OnIMBluetoothLEListener,
         this.position = 0;
         this.bondMacAddress = "";
         this.oldCom = "";
-        this.mHandler = new Handler() {
+        this.mHandler = new Handler(Looper.getMainLooper()) {
             public void handleMessage(final Message message) {
                 final int what;
                 if ((what = message.what) != 0) {

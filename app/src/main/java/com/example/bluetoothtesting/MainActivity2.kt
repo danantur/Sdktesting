@@ -282,6 +282,7 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
     }
 
     override fun onConnectionState(p0: ThermoProtocol.ConnectState?) {
+        Log.e("test", p0.toString())
         runOnUiThread {
             when (p0) {
                 ThermoProtocol.ConnectState.Connected -> {
@@ -293,7 +294,7 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
                 ThermoProtocol.ConnectState.ConnectTimeout -> {
                     Toast.makeText(
                         applicationContext,
-                        "Устройство отключено, пытаемся его найти...",
+                        "Для продолжения работы, включите устройство, пытаемся его найти...",
                         Toast.LENGTH_SHORT
                     ).show()
                     thermoprotocol!!.startScan(20)
@@ -303,12 +304,12 @@ class MainActivity2 : AppCompatActivity() , ThermoProtocol.OnConnectStateListene
                     text1!!.visibility = View.INVISIBLE
                     text2!!.visibility = View.INVISIBLE
                     text3!!.visibility = View.INVISIBLE
-                    thermoprotocol!!.startScan(5)
+                    thermoprotocol!!.connect(device_address)
                 }
                 ThermoProtocol.ConnectState.ScanFinish -> {
                     Toast.makeText(
                         applicationContext,
-                        "Устройство отключено, пытаемся его найти...",
+                        "Для продолжения работы, включите устройство, пытаемся его найти...",
                         Toast.LENGTH_SHORT
                     ).show()
                     thermoprotocol!!.startScan(20)
